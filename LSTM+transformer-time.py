@@ -9,9 +9,12 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
 import os
 import matplotlib.pyplot as plt
+import random
+random.seed(42)
+np.random.seed(42)
+tf.random.set_seed(42)
 
-
-data = pd.read_excel(r"E:\xxx")
+data = pd.read_excel(r"E:xxx.xlsx")
 time = data['Time']
 features = data.drop('Time', axis=1)
 
@@ -169,7 +172,7 @@ def run_experiment(input_length, output_length):
 
 
     lstm_output = LSTM(30, return_sequences=True)(x)
-    lstm_output = Dropout(rate)(lstm_output)  # 添加Dropout层
+    lstm_output = Dropout(rate)(lstm_output)
 
 
     lstm_output = Dense(embed_dim)(lstm_output)
@@ -187,7 +190,6 @@ def run_experiment(input_length, output_length):
     model = Model(inputs=inputs, outputs=outputs)
     model.compile(optimizer='adam', loss='mse')
 
-    # 在模型编译前添加自定义回调记录损失
     class LossHistory(tf.keras.callbacks.Callback):
         def on_train_begin(self, logs=None):
             self.losses = {'train': [], 'val': []}
@@ -204,13 +206,7 @@ def run_experiment(input_length, output_length):
 
     loss_history = LossHistory()
 
-    class LossHistory(tf.keras.callbacks.Callback):
-        def on_train_begin(self, logs=None):
-            self.losses = {'train': [], 'val': []}
-            
-        def on_epoch_end(self, epoch, logs=None):
-            self.losses['train'].append(logs.get('loss'))
-            self.losses['val'].append(logs.get('val_loss'))
+
 
 
     model.fit(X_train, y_train, epochs=100, batch_size=32, 
@@ -264,7 +260,7 @@ def run_experiment(input_length, output_length):
         return rmse, mae, nse_score, r2
 
 
-    column_names = ['WT', 'pH', 'DO', 'EC', 'NTU', 'PPI', 'NH3-N', 'TN', 'TP', 'COD']  # 修改列名
+    column_names = ['T', 'pH', 'DO', 'EC', 'NTU', 'PPI', 'NH3-N', 'TN', 'TP', 'COD']  # 修改列名
 
 
     def create_metrics_df(y_true, y_pred):
@@ -301,8 +297,8 @@ def run_experiment(input_length, output_length):
                     'True': true_col,
                     'Pred': pred_col
                 })
-                # 按照时间戳降序排列
-                df = df.sort_values(by='时间戳', ascending=False)
+
+                df = df.sort_values(by='Time', ascending=False)
                 df.to_excel(writer, sheet_name=col, index=False)
             metrics_df.to_excel(writer, sheet_name='Indicator', index=False)
 
@@ -313,8 +309,8 @@ def run_experiment(input_length, output_length):
     test_file_name = os.path.join(result_folder, f'test_results_{input_length}+{output_length}.xlsx')
 
 
-    save_results_to_excel(y_train_rescaled, train_pred_rescaled, time_train, train_metrics_df, train_file_name)
-    save_results_to_excel(y_val_rescaled, val_pred_rescaled, time_val, val_metrics_df, val_file_name)
+    #save_results_to_excel(y_train_rescaled, train_pred_rescaled, time_train, train_metrics_df, train_file_name)
+    #save_results_to_excel(y_val_rescaled, val_pred_rescaled, time_val, val_metrics_df, val_file_name)
     save_results_to_excel(y_test_rescaled, test_pred_rescaled, time_test, test_metrics_df, test_file_name)
 
     attention_model = Model(inputs=inputs, outputs=attn_weights)
@@ -333,8 +329,8 @@ def run_experiment(input_length, output_length):
         pd.DataFrame(avg_weights).to_csv(os.path.join(attn_folder, f'{prefix}_avg_weights.csv'), 
                                    index_label='TimeStep')
 
-    save_attention_weights(X_train, time_train, 'train')
-    save_attention_weights(X_val, time_val, 'val')
+    #save_attention_weights(X_train, time_train, 'train')
+    #save_attention_weights(X_val, time_val, 'val')
     save_attention_weights(X_test, time_test, 'test')
 
 
